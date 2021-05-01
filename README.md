@@ -1,5 +1,6 @@
 # Raytracing
 Author: Zachary Norfolk
+
 Description: This is a simple Raytracer coded from scratch in both C++14 and CUDA. 
 
 The progect is currently: **INCOMPLETE**
