@@ -63,7 +63,6 @@ public:
         if(closestIntersection(toLight) != NULL){
             return Color::BLACK;
         }
-        double x = 3;
         return s->color.scale(reflection.direction.dot(toLight.direction));
     }
     
