@@ -18,8 +18,6 @@ struct Light{
     Point source;
     
     Light(Point s): source(s){};
-    
-
 };
 
 #endif /* Light_hpp */
