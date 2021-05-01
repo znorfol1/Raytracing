@@ -27,7 +27,7 @@ int main(int argc, const char * argv[]) {
     scene.add(d);
     scene.add(light);
     
-    cam.render(1920, 1080, scene, camPos).writeTo("/Output/out.ppm", 256);
+    cam.render(1920, 1080, scene, camPos).writeTo("out.ppm", 256);
     
     return 0;
 }
