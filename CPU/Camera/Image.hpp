@@ -15,7 +15,7 @@
 /*
  An Image represents a PPM image file loaded in memory. It can be written to an output location using
  the function writeTo().
-*/
+ */
 class Image{
     
     unsigned int x;
@@ -23,7 +23,6 @@ class Image{
     RGB* pixels;
     
 public:
- 
     Image(int x=1920, int y=1080): x(x), y(y) {
         pixels = new RGB[x*y];
     }
@@ -32,11 +31,17 @@ public:
         delete[] pixels;
     }
     
+    /*
+     Returns a pointer the specified row of pixels.
+     */
     RGB* operator[](unsigned const int i){
         return pixels+x*i;
     }
    
-    void writeTo(std::string filename){
+    /*
+     Write the images as a PPM file to the given filepath
+     */
+    void writeTo(std::string filename) const{
         FILE *f = fopen(filename.data(), "w");
         fprintf(f, "P3 %d %d %d\n", x, y, 255);
         for(int i = 0; i < y; i++){
