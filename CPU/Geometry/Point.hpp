@@ -12,34 +12,26 @@
 #include <cmath>
 
 /*
- Defines the Point class and the UnitVec class. The Point class is a dimension 3
- point/vector supporting all standard mathematical operations.
- 
+ Defines the Point class. A Point is a 3D point/vector supporting most standard mathematical operations.
  There is a special constant POINT_NAN which is the Point equivalent of NaN
- 
- The UnitVec class is a subclass of the Point class representing unit vectors.
-*/
-
-
+ */
 class Point{
-protected:
+
+public:
+    
     double x;
     double y;
     double z;
-    
-public:
+
     Point(double x=0, double y=0, double z=0): x(x), y(y), z(z) {};
+    
     Point(const Point &p): Point(p.x, p.y, p.z){};
     
-    Point projectedRotate() const{
-        return Point(-z, 0, x);
-    }
-    
-    double dot(const Point v) const{
+    double dot(const Point &v) const{
         return x*v.x + y*v.y + z*v.z;
     }
     
-    Point cross(const Point v) const{
+    Point cross(const Point &v) const{
         return Point(y*v.z-z*v.y, z*v.x-x*v.z,x*v.y-y*v.x);
     }
     
@@ -47,11 +39,11 @@ public:
         return sqrt(dot(*this));
     }
         
-    Point operator+(const Point p) const{
+    Point operator+(const Point &p) const{
         return Point(x+p.x, y+p.y, z+p.z);
     }
     
-    Point operator-(const Point p) const{
+    Point operator-(const Point &p) const{
         return Point(x-p.x, y-p.y, z-p.z);
     }
     
@@ -71,12 +63,16 @@ public:
         return !(*this == p);
     }
     
-    double distance(const Point p) const{
+    double distanceTo(const Point &p) const{
         return sqrt((p.x-x)*(p.x-x) + (p.y-y)*(p.y-y) + (p.z-z)*(p.z-z));
     }
     
+    Point projectedRotate() const{
+        return Point(-z, 0, x);
+    }
+    
     static bool isNan(const Point &p){
-        return isnan(p.x) && isnan(p.y) && isnan(p.z);
+        return std::isnan(p.x) && std::isnan(p.y) && std::isnan(p.z);
     }
 };
 
@@ -86,9 +82,17 @@ static Point operator*(const double a, const Point &p) {
     return p*a;
 }
 
+
+
+/*
+ Subclass of a Point representing a vector of length 1.
+ */
 class UnitVec: public Point {
+    
 public:
+    
     UnitVec(double x=1, double y=0, double z=0): Point(Point(x, y, z)/Point(x, y, z).norm()){};
+    
     UnitVec(const Point &p): Point(p/p.norm()) {};
     
     /*
