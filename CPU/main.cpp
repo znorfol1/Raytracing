@@ -5,7 +5,6 @@
 //  Created by Zachary Norfolk on 3/26/21.
 //
 
-#include "Solid.hpp"
 #include "Scene.hpp"
 #include "Camera.hpp"
 #include "Plane.hpp"
@@ -13,21 +12,32 @@
 #include <iostream>
 
 int main(int argc, const char * argv[]) {
-    Point c(0, 1, 0);
-    Ray r1(Point(0,0,0), c);
     
-    Sphere s(c, 1, Color::ORANGE);
-    Disk d(r1, 3, Color::GRAY);
-    Camera cam(1);  
-    Light light(Point(0,3,1));
-    Ray camPos(Point(4, 3, 4),  c);
-
+    //Example Scene
+    
+    //Create Solids
+    Plane floor(Ray(Point(), Point(0,1,0)), Color::WHITE);
+    Sphere s1(Point(0,1,0),1, Color::YELLOW);
+    Sphere s2(Point(-4,1,1), 1, Color::GREEN,.5);
+    Sphere s3(Point(2,.2,1), .2, Color::PURPLE,.5);
+    
+    //Create Light
+    Light light(Point(0,4,1));
+    
+    //Add to Scene
     Scene scene;
-    scene.add(s);
-    scene.add(d);
+    scene.add(floor);
+    scene.add(s1);
+    scene.add(s2);
+    scene.add(s3);
     scene.add(light);
     
-    cam.render(1920, 1080, scene, camPos).writeTo("out.ppm", 256);
+    //Create camera
+    Camera cam(1);
+    Ray camPosition(Point(4,3,4), Point(0,1,0));
+    
+    //Render and write to file
+    cam.render(1920, 1080, scene, camPosition).writeTo("/Users/zacharynorfolk/Projects/Simple Rendering/Output/out.ppm");
     
     return 0;
 }
