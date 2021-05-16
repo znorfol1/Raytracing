@@ -11,51 +11,37 @@
 #include "Solid.hpp"
 
 /*
- Defines the Plane class and its subclass Disk. A Plane is defined by a singular Ray who's
- direction is the normal and origin is some point on the plane. A Disk is a flat circle.
+ Defines the Plane class. A Plane is determined by a singular Ray who's
+ direction is the surface normal and who's origin is some point on the plane.
  */
-
 class Plane: public Solid{
 protected:
-    Ray p;
-    constexpr const static double EPSILON = .000001;
+    Ray p; // normal ray
 public:
-    Plane(Ray p, RGB c = Color::VOID): Solid(c), p(p) {};
-    Plane(const Plane &a): p(a.p) {};
+    Plane(Ray p, RGB c = Color::WHITE, double r = 0): Solid(c, r), p(p) {};
     
-    virtual Point intersects(Ray r) const override{
+    Plane(const Plane &a): Solid(a), p(a.p) {};
+    
+    virtual Point intersect(const Ray &r) const override{
         double d = r.direction.dot(p.direction);
         if(d == 0){
             return POINT_NAN;
         }
         d = (p.origin - r.origin).dot(p.direction)/d;
-        if(d <= 0+EPSILON){
+        if(d <= 0+SOLID_EPSILON){
             return POINT_NAN;
         }
         return r.origin + (r.direction*d);
     }
     
-    virtual Ray reflect(Ray r) const override{
-        Point a = p.direction.reflect(r.direction);
-        Point intersection = intersects(r);
-        return Ray(intersection, a+intersection);
-        
-        double d = - p.direction.dot(p.origin);
-        a = a - (2*d)*p.direction;
-        return Ray(intersection, a);
+    virtual UnitVec normal(const Point &p) const override{
+        return this->p.direction;
     }
-};
-
-
-class Disk: public Plane{
-    double radius;
-public:
-    Disk(Ray p, double r, RGB c): Plane(p, c), radius(r) {};
-    Disk(const Disk &d): Plane(d.p, d.color), radius(d.radius) {};
     
-    virtual Point intersects(Ray r) const override{
-        Point x = Plane::intersects(r);
-        return (x.distance(p.origin) < radius) ? x : POINT_NAN;
+    virtual Ray reflect(const Ray &r) const override{
+        Point a = p.direction.reflect(r.direction);
+        Point intersection = intersect(r);
+        return Ray(intersection, a+intersection);
     }
 };
 
