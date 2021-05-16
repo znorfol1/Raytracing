@@ -15,13 +15,21 @@
  The Ray struct contains a Point representing its origin, and a UnitVec describing its
  direction.
 */
-
 struct Ray{
+    
     Point origin;
     UnitVec direction;
 
     Ray(Point origin, Point other) : origin(origin), direction(other-origin) {};
+    
     Ray(const Ray &r) : origin(r.origin), direction(r.direction) {};
+    
+    /*
+     Returns the Ray originating from the same point, but traveling in the opposite direction.
+     */
+    Ray opposite() const{
+        return Ray(origin, origin-direction);
+    }
 };
 
 #endif /* Ray_hpp */
