@@ -37,7 +37,7 @@ int main(int argc, const char * argv[]) {
     Ray camPosition(Point(4,3,4), Point(0,1,0));
     
     //Render and write to file
-    cam.render(1920, 1080, scene, camPosition).writeTo("/Users/zacharynorfolk/Projects/Simple Rendering/Output/out.ppm");
+    cam.render(1920, 1080, scene, camPosition).writeTo("out.ppm"); // Specify output filepath here
     
     return 0;
 }
