@@ -33,8 +33,8 @@ namespace Color{
     const static RGB PINK(200, 40, 150);
     const static RGB PURPLE(201, 59, 245);
     const static RGB GREEN(56, 245, 122);
-    const static RGB ATMOSPHERE(120,120,120);
-    const static RGB DARKGRAY(50,50,50);
+    const static RGB ATMOSPHERE(120,120,110);
+    const static RGB SHADOW(50,50,50);
 }
 
 #endif /* Color_hpp */
