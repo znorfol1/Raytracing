@@ -15,13 +15,13 @@
  The Ray struct contains a Point representing its origin, and a UnitVec describing its
  direction.
 */
-
 struct Ray{
+    
     Point origin;
     UnitVec direction;
 
     __host__  __device__
-    Ray(Point origin = Point(0,1,0), Point other= Point(0,0,1)) : origin(origin), direction(other-origin) {};
+    Ray(Point origin, Point other) : origin(origin), direction(other-origin) {};
     
     __host__  __device__
     Ray(const Ray &r) : origin(r.origin), direction(r.direction) {};
@@ -36,4 +36,3 @@ struct Ray{
 };
 
 #endif /* Ray_hpp */
-
