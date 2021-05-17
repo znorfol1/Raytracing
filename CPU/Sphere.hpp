@@ -16,6 +16,8 @@
 
 /*
  Defines the Sphere class. A Sphere is determined by its center Point and a radius value.
+ 
+ See Solid.hpp for virtual function documentation
 */
 class Sphere: public Solid{
     Point c; // center of Sphere
@@ -52,6 +54,5 @@ public:
         return plane.reflect(r);
     }
 };
-
 
 #endif /* Sphere_hpp */
