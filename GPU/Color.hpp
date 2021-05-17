@@ -25,9 +25,10 @@ struct RGB{
  Defines some common colors for ease of use.
  */
 namespace Color{
-
     const static RGB WHITE(255, 255, 255);
     const static RGB BLACK(3, 3, 3);
+    const static RGB RED(240, 65, 97);
+    const static RGB ORANGE(255, 85, 51);
     const static RGB YELLOW(255, 188, 5);
     const static RGB GRAY(125, 125, 125);
     const static RGB BLUE(24, 61, 182);
@@ -42,4 +43,5 @@ namespace Color{
 #define BLACK RGB(3,3,3)
 
 #endif /* Color_hpp */
+
 
