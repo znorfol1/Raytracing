@@ -17,11 +17,9 @@
  the function writeTo().
  */
 class Image{
-    
     unsigned int x;
     unsigned int y;
     RGB* pixels;
-    
 public:
     Image(int x=1920, int y=1080): x(x), y(y) {
         pixels = new RGB[x*y];
