@@ -13,6 +13,14 @@
 #include "Light.hpp"
 #include <assert.h>
 #include <iostream>
+#include <curand_kernel.h>
+
+#define NUM_SAMPLES 5
+#define NUM_BOUNCES 3
+
+#define ATMOSPHERE_COLOR RGB(120,120,120)
+#define SHADOW_COLOR  RGB(40,40,40)
+
 
 /*
  Defines the Scene class. A Scene is the container that holds Solids and Lights which will be
@@ -23,7 +31,6 @@
 
 static Solid** GPU_SOLIDS = NULL;
 static unsigned GPU_SOLIDS_SIZE = 0;
-//static Light* GPU_LIGHT = NULL;
 static Light GPU_LIGHT;
 
 
@@ -33,149 +40,145 @@ static Light GPU_LIGHT;
         assert(GPU_SOLIDS == NULL);
         
         cudaMalloc(&GPU_SOLIDS, sizeof(Solid*) * n);
-        //cudaMalloc(&GPU_LIGHT, sizeof(Light));
+        
     }
     
     __host__
     void createLightGPU(Point s, RGB c){
         GPU_LIGHT = Light(s);
-        //initLight<<<1,1>>>(s,c,GPU_LIGHT);
     }
 
-
-
+    
+    /*
+     Finds the first object the given ray intersects.
+     If none are hit, NULL is returned.
+     */
     __device__
-    Solid* closestIntersection(Ray r, Solid** solids, unsigned n) {
+    Solid* closestIntersection(Ray r, Solid** solids, int n) {
         Solid* closest = NULL;
         double dist = INFINITY;
-        for(int i = 0; i < n; i++){
-            Solid* a = solids[i];
-            Point p = a->intersects(r);
+        for(int i = 0; i < n;  i++){
+            Point p = solids[i]->intersect(r);
             if(Point::isNan(p)){
                 continue;
             }
-            double d = p.distance(r.origin);
+            double d = p.distanceTo(r.origin);
             if(d < dist){
-                closest = a;
+                closest = solids[i];
                 dist = d;
             }
         }
         return closest;
     }
     
-
-    
+    /*
+     Generates a random double between -d and d
+     */
     __device__
-    RGB calcColor(LightRay* in, unsigned n, Solid* s, UnitVec out){
-        double prob[2]; // MAKE SURE n <= 2
+    double ran(curandState* state,  double d = 1){
+        return 2*d*curand_uniform(state)-d;
+    }
+    
+    /*
+     Generates a random ray off a surface given an intersection point.
+     
+     i: The Point on the surface
+     n: the normal to the surface
+     b1: the first local basis element to the surface
+     b2: the second local basis element to the  surface
+     */
+    __device__
+    Ray randomRay(curandState* state, Point i, UnitVec n, UnitVec b1, UnitVec b2, double d = 1){
+        return Ray(i, i+n + ran(state, d)*b1 + ran(state, d)*b2);
+    }
+    
+    /*
+     Gives a UnitVec living on the plane normal to the input vector
+     */
+    __device__
+    UnitVec getBasis1(UnitVec n){
+        if(n.x != 0){
+            double a = -n.dot(Point(0,1,1))/n.x;
+            return UnitVec(a, 1, 1);
+        }
+        return UnitVec(1, 0, 0);
+    }
+    
+    /*
+     Given an array of incoming LightRays, and an outwards direction, returns the outgoing color.
+     */
+    __device__
+    RGB calcColor(LightRay* in, Solid* s, UnitVec out){
+        double prob[NUM_SAMPLES];
         double sum = 0;
-        for(int i = 0; i < n; i++){
+        for(int i = 0; i < NUM_SAMPLES; i++){
             Ray incoming(in[i].r.origin + in[i].r.direction, in[i].r.origin);
-            prob[i] = s->brdf(incoming, out);
+            //prob[i] = s->brdf(incoming, out);
+            prob[i] = 1;
+            prob[i] *= in[i].r.direction.dot(s->normal(in[0].r.origin));
             sum+=prob[i];
         }
-        for(int i = 0; i < n; i++){
+        for(int i = 0; i < NUM_SAMPLES; i++){
             prob[i] /= sum;
         }
         double r = 0;
         double g = 0;
         double b = 0;
-        for(int i = 0; i < n; i++){
-            double c = prob[i] * in[i].r.direction.dot(s->normal(in[0].r.origin));
+        for(int i = 0; i < NUM_SAMPLES; i++){
+            double c = prob[i];
             r += c * in[i].color.r;
             g += c * in[i].color.g;
             b += c * in[i].color.b;
         }
         return RGB(r*(s->color.r/255.0), g*(s->color.g/255.0), b*(s->color.b/255.0));
     }
-    
 
+    /*
+     Traces the ray throughout the scene with the specified number of bounces and number of random samples
+     */
     __device__
-        RGB traceLightNoRecursion(Ray r, int numBounces, Solid** solids, Light light, unsigned n){
-        LightRay incoming[2];
+    RGB traceLight(Ray r, int numBounces, Solid** solids, int n, Light light, curandState* state) {
+    
+        LightRay incoming[NUM_SAMPLES];
         Solid* s = closestIntersection(r, solids, n);
-        if(s == NULL){          
-            return BLACK;
-        }
-
-        Ray refl = s->reflect(r);
-        Ray toLight = Ray(refl.origin,  light.source);
-        if(closestIntersection(toLight, solids, n) !=  NULL){
-            return BLACK;
-        }
-        incoming[0] = LightRay(toLight, WHITE);
-        //return  s->color;
-        return calcColor(incoming,1, s,  r.opposite().direction);
-    }
-
-/*
-        __device__
-    RGB traceLight(Ray r, int numBounces, Solid** solids, Light light, unsigned n){
-        printf("IN TRACELIGHT BOUNCE %d\n", numBounces);
-        LightRay incoming[2];
-        Solid* s = closestIntersection(r, solids, n);
-        printf("    R direction: %lf , %lf, %lf\n", r.direction.x,  r.direction.y, r.direction.z);
-
+    
         if(s == NULL){
-        printf("Did't hit solid, bounce %d\n", numBounces);
             if(light.hits(r)){
-            
                 return light.color;
             }
-            
-            return BLACK;
+            return ATMOSPHERE_COLOR;
         }
-        printf("Hit solid, bounce %d\n", n);
         if(numBounces == 0){
-            return BLACK;
+            return SHADOW_COLOR;
         }
-        
+
         Ray refl = s->reflect(r);
-        printf("Reflected\n");
-        printf("    Direction: %lf , %lf, %lf\n", refl.direction.x,  refl.direction.y, refl.direction.z);
-        
-        Ray toLight = Ray(refl.origin,  light.source);
-        printf("    ToLight: %lf , %lf, %lf\n", toLight.direction.x,  toLight.direction.y, toLight.direction.z);
-        
-        printf("Created incoming Rays\n");
-        
-        Point normal = s->normal(refl.origin);
-        
-        RGB color = traceLight(refl, numBounces-1, solids, light, n);
-        incoming[0] = LightRay(refl, color);
-        printf("Color: %d\n", incoming[0].color.r);
-        
-        //incoming[0] = LightRay(refl, traceLight(refl, numBounces-1, solids, light, n));
-        
-        printf("Tracing reflection\n");
-        toLight.direction.dot(s->normal(toLight.origin));
-        /*
-        if(toLight.direction.dot(s->normal(toLight.origin)) >= 0 - .0001){
-            incoming[1] = LightRay(toLight, traceLight(toLight, numBounces-1, solids, light, n));
-        } 
-        
-        else {
-            incoming[1] = LightRay(refl, traceLight(refl, numBounces-1, solids,light,n));
+        Ray toLight = Ray(refl.origin,  light.source + Point(ran(state, .2),0, ran(state, .2)));
+        UnitVec nor = s->normal(refl.origin);
+        UnitVec b1 = getBasis1(nor);
+        UnitVec b2 = nor.cross(b1);
+
+        int count = 0;
+        if(toLight.direction.dot(s->normal(toLight.origin)) >= 0 - .0001 && closestIntersection(toLight, solids, n)==NULL){
+            incoming[0] = LightRay(toLight, traceLight(toLight, numBounces-1, solids, n, light, state));
+            count++;
         }
-        
-        return calcColor(incoming, 2, s, r.opposite().direction);
-        
-        return BLACK;
+        for(int i = count; i < NUM_SAMPLES; i++){
+            Ray r1 = randomRay(state,refl.origin, nor, b1, b2);
+            incoming[i] = LightRay(r1,traceLight(r1, numBounces - 1, solids, n, light, state));
+        }
+        return calcColor(incoming, s, r.opposite().direction);
     }
     
-*/
-    
+
     __global__
-    void trace(RGB* pixels, Ray* r, Solid** solids, Light light, unsigned n) {
+    void trace(RGB* pixels, Ray* r, Solid** solids, int n, Light light, curandState* state) {
         unsigned blockId = blockIdx.x + blockIdx.y * gridDim.x; 
         unsigned tid = blockId * (blockDim.x * blockDim.y)
             + (threadIdx.y * blockDim.x) + threadIdx.x;
 
-        pixels[tid] = traceLightNoRecursion(r[tid], 1, solids, light, n);
+        pixels[tid] = traceLight(r[tid], 3, solids,n,light, state+tid);
     }
-
-
-
 
 #endif /* Scene_hpp */
 
