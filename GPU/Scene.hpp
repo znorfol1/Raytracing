@@ -8,11 +8,9 @@
 #ifndef Scene_hpp
 #define Scene_hpp
 
-
 #include "Solid.hpp"
 #include "Light.hpp"
 #include <assert.h>
-#include <iostream>
 #include <curand_kernel.h>
 
 #define NUM_SAMPLES 5
@@ -23,30 +21,23 @@
 
 
 /*
- Defines the Scene class. A Scene is the container that holds Solids and Lights which will be
- used to render the image. Solids and Lights can be created independently and registered to the
- Scene using add(). To be rendered, the scene must be passed to a Camera object.
+    Pointers to different members of the singular GPU scene object
 */
-
-
 static Solid** GPU_SOLIDS = NULL;
 static unsigned GPU_SOLIDS_SIZE = 0;
 static Light GPU_LIGHT;
 
 
-
-    __host__
-    void createSceneGPU(unsigned n){
-        assert(GPU_SOLIDS == NULL);
-        
-        cudaMalloc(&GPU_SOLIDS, sizeof(Solid*) * n);
-        
-    }
+__host__
+void createSceneGPU(unsigned n){
+    assert(GPU_SOLIDS == NULL);      
+    cudaMalloc(&GPU_SOLIDS, sizeof(Solid*) * n);     
+}
     
-    __host__
-    void createLightGPU(Point s, RGB c){
-        GPU_LIGHT = Light(s);
-    }
+__host__
+void createLightGPU(Point s, RGB c){
+    GPU_LIGHT = Light(s);
+}
 
     
     /*
@@ -113,8 +104,7 @@ static Light GPU_LIGHT;
         double sum = 0;
         for(int i = 0; i < NUM_SAMPLES; i++){
             Ray incoming(in[i].r.origin + in[i].r.direction, in[i].r.origin);
-            //prob[i] = s->brdf(incoming, out);
-            prob[i] = 1;
+            prob[i] = s->brdf(incoming, out);
             prob[i] *= in[i].r.direction.dot(s->normal(in[0].r.origin));
             sum+=prob[i];
         }
@@ -170,7 +160,10 @@ static Light GPU_LIGHT;
         return calcColor(incoming, s, r.opposite().direction);
     }
     
-
+    
+    /*
+    Kernel that performes the rendering
+    */
     __global__
     void trace(RGB* pixels, Ray* r, Solid** solids, int n, Light light, curandState* state) {
         unsigned blockId = blockIdx.x + blockIdx.y * gridDim.x; 
