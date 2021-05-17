@@ -21,6 +21,15 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
       if (abort) exit(code);
    }
 }
+
+    __global__
+    void initRand(curandState* state){
+        unsigned blockId = blockIdx.x + blockIdx.y * gridDim.x; 
+        unsigned tid = blockId * (blockDim.x * blockDim.y)
+            + (threadIdx.y * blockDim.x) + threadIdx.x;
+        curand_init(0, tid, 0, state+tid);
+    }
+    
    
 
 /*
@@ -38,6 +47,7 @@ public:
     __host__
     Camera(double f = 1, double x=1.77777777, double y=1): viewPortX(x), viewPortY(y), focalLength(f) {};
     
+
     /*
      Renders the Scene with this Camera placed in the specified Ray position. The Camera will be pointing in the direction
      given by the Ray position, and will be level to the  xz plane.
@@ -54,11 +64,14 @@ public:
         // o is the location of the top left of the outputted image
         RGB* pixels = new RGB[(int)xRes* (int)yRes];
         Ray* rays = (Ray*)  malloc(sizeof(Ray)*(int)xRes*(int)yRes);
-        //Ray* rays = new Ray[xRes *  yRes];
         RGB* GPU_pixels;
         Ray* GPU_rays;
         cudaMalloc(&GPU_pixels, sizeof(RGB)*(xRes*yRes));
         cudaMalloc(&GPU_rays, sizeof(Ray)*xRes*yRes);
+        
+        curandState* states;
+        cudaMalloc(&states , xRes*yRes*sizeof(curandState));
+        
         for(int j = 0; j < yRes; j++){
             for (int i = 0; i < xRes; i++){
                 Ray p(position.origin, o + i*xBasis - j*yBasis);
@@ -67,11 +80,12 @@ public:
         }
                    
         dim3 blockSize = dim3(8,8);
-        dim3 gridSize = dim3(xRes/8, yRes/8);        
+        dim3 gridSize = dim3(xRes/8, yRes/8);      
         cudaMemcpy(GPU_rays, rays, sizeof(Ray)*xRes*yRes, cudaMemcpyHostToDevice);
-        gpuErrchk( cudaDeviceSynchronize() );
-        trace<<<gridSize, blockSize>>>(GPU_pixels, GPU_rays, GPU_SOLIDS, GPU_LIGHT, GPU_SOLIDS_SIZE);
-        //trace<<<1, 1>>>(GPU_pixels, GPU_rays, GPU_SOLIDS, GPU_LIGHT, GPU_SOLIDS_SIZE);
+                   
+        initRand<<<gridSize, blockSize>>>(states);           
+        trace<<<gridSize, blockSize>>>(GPU_pixels, GPU_rays, GPU_SOLIDS, GPU_SOLIDS_SIZE, GPU_LIGHT, states);
+                   
         cudaMemcpy(pixels, GPU_pixels, sizeof(RGB)*xRes*yRes, cudaMemcpyDeviceToHost);
         delete[] rays;
         Image img(xRes, yRes, pixels);
