@@ -13,6 +13,8 @@
 /*
  Defines the Plane class. A Plane is determined by a singular Ray who's
  direction is the surface normal and who's origin is some point on the plane.
+ 
+ See Solid.hpp for virtual function documentation
  */
 class Plane: public Solid{
 protected:
