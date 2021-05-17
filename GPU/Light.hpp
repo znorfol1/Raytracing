@@ -11,10 +11,8 @@
 #include "Color.hpp"
 #include "Ray.hpp"
 
-
-
 /*
- A struct representing a light source. It has a Point location, and a color.
+ A struct representing a light source. It has a location and a color.
  */
 struct Light{
 
@@ -31,16 +29,16 @@ struct Light{
      Determines if a Ray hits the Light.
      */
     __device__
-    bool hits(Ray r){
+    bool hits(const Ray &r) const{
         double d =  distanceTo(r);
-        return d > -.1  && d < .0001;
+        return -0.001 < d && d < .35;
     }
     
     /*
      Returns the distance from this Light to the closest point on a given Ray.
      */
     __device__
-    double distanceTo(Ray r){
+    double distanceTo(const Ray &r) const{
         double lambda = (source.dot(r.direction)) - (r.origin.dot(r.direction));
         if(lambda < 0 - 0.0000001){
             return -1;
@@ -49,42 +47,24 @@ struct Light{
     }
 };
 
-
-
-    __global__
-    void initLight(Point s, RGB c, Light* light){
-        *light = Light(s);
-    }
-
-
-
-    
-
-
-
 /*
  Struct representing a Ray that also carries a color.
  */
 struct LightRay{
     
-    RGB color;
+    RGB color = WHITE;
     Ray r;
     
     __device__
-    LightRay(Ray r = Ray(Point(0,0,0),Point(0,0,1)), RGB c = WHITE): r(r), color(c) {};
+    LightRay(Ray r = Ray(Point(0,0,0), Point(0,0,0)), RGB c = WHITE): r(r), color(c) {};
     
     __device__
     LightRay(Light l, Point to): r(l.source,to), color(l.color){};
     
     __device__
     LightRay(const LightRay& o): LightRay(o.r, o.color) {};
-    
-    __device__
-    Ray towardsSource(){
-        return Ray(r.origin, r.origin-r.direction);
-    }
 };
 
-
 #endif /* Light_hpp */
+
 
