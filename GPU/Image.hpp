@@ -55,4 +55,3 @@ public:
 };
 
 #endif /* Image_hpp */
-
