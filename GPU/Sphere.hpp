@@ -15,19 +15,19 @@
 #define SQR(x) ((x)*(x))
 
 /*
- Defines the Sphere class. A Sphere is defined by its center Point and a radius.
+ Defines the Sphere class. A Sphere is determined by its center Point and a radius value.
+ 
+ See Solid.hpp for virtual function documentation
 */
 class Sphere: public Solid{
-    Point c;
-    double radius;
-    
+    Point c; // center of Sphere
+    double radius;  // radius
 public:
-
     __host__ __device__
-    Sphere(Point c, double r, RGB color): Solid(color), c(c), radius(r) {};
+    Sphere(Point c, double r, RGB color, double refl=0): Solid(color, refl), c(c), radius(r) {};
     
     __device__
-    virtual Point intersects(Ray r) const override{
+    virtual Point intersect(const Ray &r) const override{
         Point u = r.direction;
         Point o = r.origin;
         double del = SQR(u.dot(o-c)) + SQR(radius) - SQR((o-c).norm());
@@ -35,44 +35,47 @@ public:
             return POINT_NAN;
         }
         double d = -(u.dot(o-c)) - sqrt(del);
-        if(d <=0-EPSILON){
+        if(d <= 0-SOLID_EPSILON){
             return POINT_NAN;
         }
         return o + d*u;
     }
     
     __device__
-    virtual UnitVec normal(Point p) const override{
+    virtual UnitVec normal(const Point &p) const override{
         return Ray(c, p).direction;
     }
     
     __device__
-    virtual Ray reflect(Ray r) const override{
-        Point intersection = intersects(r);
+    virtual Ray reflect(const Ray &r) const override{
+        Point intersection = intersect(r);
         Ray pos(intersection, (2*intersection)-c);
         Plane plane(pos);
         Ray a = plane.reflect(r);
         if(Point::isNan(a.origin)){
-            return Ray(r.origin+EPSILON*r.direction, r.origin+r.direction);
+            return Ray(r.origin+SOLID_EPSILON*r.direction, r.origin+r.direction);
         }
         return plane.reflect(r);
     }
 };
 
+/*
+Device initalizers
+*/
 
-    __global__
-    void initSphere(Point p, double r, RGB c, Solid** solids, unsigned n){
-        Sphere* sphere = new Sphere(p, r, c);
-        solids[n] = sphere;
-    }
+__global__
+void initSphere(Point p, double r, RGB c, Solid** solids, unsigned n){
+    Sphere* sphere = new Sphere(p, r, c);
+    solids[n] = sphere;
+}
 
+__host__
+void createSphereGPU(Point p, double r, RGB c){
+    initSphere<<<1,1>>>(p,r,c,GPU_SOLIDS, GPU_SOLIDS_SIZE);
+    GPU_SOLIDS_SIZE++;
+}
 
-    __host__
-    void createSphereGPU(Point p, double r, RGB c){
-        initSphere<<<1,1>>>(p,r,c,GPU_SOLIDS, GPU_SOLIDS_SIZE);
-        GPU_SOLIDS_SIZE++;
-    }
-    
 
 #endif /* Sphere_hpp */
+
 
