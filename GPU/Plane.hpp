@@ -9,23 +9,19 @@
 #define Plane_hpp
 
 #include "Solid.hpp"
-#include "Scene.hpp"
-#include <iostream>
 
 /*
- Defines the Plane class and its subclass Disk. A Plane is defined by a singular Ray who's
- direction is the normal and origin is some point on the plane. A Disk is a flat circle.
+ Defines the Plane class. A Plane is determined by a singular Ray who's
+ direction is the surface normal and who's origin is some point on the plane.
+ 
+ See Solid.hpp for virtual function documentation
  */
-
 class Plane: public Solid{
 protected:
-    Ray p;
+    Ray p; // normal ray
 public:
-
-
-        
     __device__
-    Plane(Ray p, RGB c = BLACK, double r = .999): Solid(c, r), p(p) {};
+    Plane(Ray p, RGB c = WHITE, double r = 0): Solid(c, r), p(p) {};
     
     __device__
     Plane(const Plane &a): Solid(a), p(a.p) {};
@@ -34,11 +30,8 @@ public:
     virtual ~Plane() {};
     
     __device__
-    virtual Point intersects(Ray r) const override{
-        //printf("In Plane Intersects\n");
-        //printf("    %lf , %lf, %lf\n", r.direction.x,  r.direction.y, r.direction.z);
+    virtual Point intersect(const Ray &r) const override{
         double d = r.direction.dot(p.direction);
-        
         if(d == 0){
             return POINT_NAN;
         }
@@ -46,39 +39,39 @@ public:
         if(d <= 0+SOLID_EPSILON){
             return POINT_NAN;
         }
-        return r.origin + (d*r.direction);
+        return r.origin + (r.direction*d);
     }
     
     __device__
-    virtual UnitVec normal(Point p) const override{
+    virtual UnitVec normal(const Point &p) const override{
         return this->p.direction;
     }
     
     __device__
-    virtual Ray reflect(Ray r) const override{
+    virtual Ray reflect(const Ray &r) const override{
         Point a = p.direction.reflect(r.direction);
-        Point intersection = intersects(r);
+        Point intersection = intersect(r);
         return Ray(intersection, a+intersection);
     }
 };
 
+/*
+Device initalizers
+*/
 
-    __global__
-    void initPlane(Ray p, RGB c, Solid** solids, unsigned n){
-        Plane* plane = new Plane(p, c);
-        solids[n] = plane;
-    }
+__global__
+void initPlane(Ray p, RGB c, Solid** solids, unsigned n){
+    Plane* plane = new Plane(p, c);
+    solids[n] = plane;
+}
 
-
-    __host__
-    void createPlaneGPU(Ray p, RGB c){
-        initPlane<<<1,1>>>(p,c,GPU_SOLIDS, GPU_SOLIDS_SIZE);
-        GPU_SOLIDS_SIZE++;
-    }
+__host__
+void createPlaneGPU(Ray p, RGB c){
+    initPlane<<<1,1>>>(p,c,GPU_SOLIDS, GPU_SOLIDS_SIZE);
+    GPU_SOLIDS_SIZE++;
+}
     
 
-
-
-
 #endif /* Plane_hpp */
+
 
