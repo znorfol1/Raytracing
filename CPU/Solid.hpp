@@ -10,14 +10,13 @@
 
 #include "Ray.hpp"
 #include "Color.hpp"
-#include <cmath>
 
 #define SOLID_EPSILON 0.000001
 
 /*
  Defines the abstract Solid class. Solids are the objects in the scene which interact with
  light. These are the objects that show up in the rendering. Solids have a color and reflectivity value.
- Reflectivity is currently unsupported, all objects are diffuse.
+ Reflectivity is currently unsupported, so all objects are diffuse.
  */
 class Solid{
 public:
