@@ -21,7 +21,7 @@ class Scene{
 
 public:
     std::vector<Solid*> solids; // Solids in the scene
-    std::vector<Light*> lights; // Lights in the scene (only 1 light is currently supported
+    std::vector<Light*> lights; // Lights in the scene (only 1 light is currently supported)
 
     Scene(std::vector<Solid*> solids, std::vector<Light*> lights): solids(solids), lights(lights){};
     
@@ -77,10 +77,8 @@ private:
      Generates a random double between -d and d
      */
     static double ran(double d = 1){
-        double min = -d;
-        double max = d;
-        float ran = (float)rand() / (float)RAND_MAX;
-        return min + ran * (max - min);
+        double ran = (double)rand() / (double)RAND_MAX;
+        return 2*d*ran - d;
     }
     
     /*
