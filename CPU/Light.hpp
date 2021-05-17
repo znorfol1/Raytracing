@@ -12,7 +12,7 @@
 #include "Ray.hpp"
 
 /*
- A struct representing a light source. It has a location and a color.
+ A struct representing a light source. A light has a location and a color.
  */
 struct Light{
 
