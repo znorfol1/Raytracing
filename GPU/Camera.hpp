@@ -91,7 +91,7 @@ public:
                    
         cudaMemcpy(pixels, GPU_pixels, sizeof(RGB)*xRes*yRes, cudaMemcpyDeviceToHost);
         
-        printf("Total time taken: %.3lf seconds\n\n", timeMS/1000);
+        printf("Render time taken: %.3lf seconds\n\n", timeMS/1000);
         delete[] rays;
         cudaEventDestroy(start);
         cudaEventDestroy(stop);
