@@ -11,6 +11,8 @@
 #include <vector>
 #include "Solid.hpp"
 #include "Light.hpp"
+#include <cstddef>
+#include <stdlib.h>
 
 /*
  Defines the Scene class. A Scene is the container that holds Solids and Lights which will be
